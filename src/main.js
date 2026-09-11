@@ -23,8 +23,10 @@ import {
   learn,
   learnSet,
   onboarding,
+  playHub,
   playQuiz,
   playSort,
+  ready,
   resultQuiz,
   resultSort,
   shell,
@@ -41,6 +43,8 @@ const state = {
   unlocked: [],
   learnSetId: null,
   lastSortMode: null,
+  pending: null,
+  reviewOpen: false,
 }
 
 function sound(name) {
@@ -55,11 +59,14 @@ function sound(name) {
 function render() {
   const p = state.progress
   let inner = ''
+  const screen = p.seenOnboarding ? state.screen : 'onboard'
   if (!p.seenOnboarding) inner = onboarding()
   else if (state.screen === 'hub') inner = hub(p)
+  else if (state.screen === 'play-hub') inner = playHub(p)
+  else if (state.screen === 'ready') inner = ready(state.pending)
   else if (state.screen === 'choose-set') inner = chooseSet(p)
   else if (state.screen === 'play') inner = playSort(state.game)
-  else if (state.screen === 'result') inner = resultSort(state.game, state.tally, p, state.unlocked)
+  else if (state.screen === 'result') inner = resultSort(state.game, state.tally, p, state.unlocked, state.reviewOpen)
   else if (state.screen === 'quiz') inner = playQuiz(state.quiz)
   else if (state.screen === 'quiz-result') inner = resultQuiz(state.tally, p, state.unlocked)
   else if (state.screen === 'learn') inner = learn()
@@ -68,7 +75,7 @@ function render() {
   else if (state.screen === 'achievements') inner = achievements(p)
   else inner = hub(p)
 
-  app.innerHTML = shell(p, inner)
+  app.innerHTML = shell(p, inner, screen)
   bindDrag()
 }
 
@@ -100,6 +107,15 @@ function startTimeline() {
 function startQuiz() {
   state.quiz = dealQuiz()
   go('quiz')
+}
+
+function startPending() {
+  const pending = state.pending
+  if (!pending) return
+  if (pending.kind === 'daily') startDaily()
+  else if (pending.kind === 'timeline') startTimeline()
+  else if (pending.kind === 'quiz') startQuiz()
+  else if (pending.kind === 'dezena') startDezena(pending.setId)
 }
 
 function newUnlocks(before, after) {
@@ -201,6 +217,7 @@ app.addEventListener('click', (event) => {
   const action = btn.dataset.action
 
   if (action === 'home') go('hub')
+  if (action === 'play-hub') go('play-hub')
   if (action === 'how') go('how')
   if (action === 'learn') go('learn')
   if (action === 'achievements') go('achievements')
@@ -208,9 +225,30 @@ app.addEventListener('click', (event) => {
   if (action === 'play-daily') startDaily()
   if (action === 'play-timeline') startTimeline()
   if (action === 'play-quiz') startQuiz()
+  if (action === 'ready-daily') {
+    state.pending = { kind: 'daily' }
+    go('ready')
+  }
+  if (action === 'ready-timeline') {
+    state.pending = { kind: 'timeline' }
+    go('ready')
+  }
+  if (action === 'ready-quiz') {
+    state.pending = { kind: 'quiz' }
+    go('ready')
+  }
+  if (action === 'ready-set') {
+    state.pending = { kind: 'dezena', setId: btn.dataset.set, from: state.screen }
+    go('ready')
+  }
+  if (action === 'start-ready') startPending()
+  if (action === 'toggle-review') {
+    state.reviewOpen = !state.reviewOpen
+    render()
+  }
   if (action === 'learn-set') {
-    state.learnSetId = btn.dataset.set
-    go('learn-set')
+    state.learnSetId = btn.dataset.set || state.learnSetId
+    go(state.learnSetId ? 'learn-set' : 'learn')
   }
   if (action === 'play-set') startDezena(btn.dataset.set)
 
@@ -271,6 +309,7 @@ app.addEventListener('click', (event) => {
     state.unlocked = newUnlocks(before, state.progress.achievements)
     state.game = { ...game, results, checked: true }
     state.tally = tally
+    state.reviewOpen = false
     if (tally.perfect) {
       sound('win')
       burstConfetti()
