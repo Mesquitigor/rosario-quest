@@ -16,6 +16,14 @@ const accentClass = {
   glory: 'card-glory',
 }
 
+export function tercoIcon(className = 'h-7 w-7', alt = 'Terço') {
+  return `<img src="/terco.png" alt="${alt}" class="terco-icon ${className}" draggable="false" />`
+}
+
+function mark(value, className = 'inline-block h-6 w-6 align-middle') {
+  return value === '📿' ? tercoIcon(className) : value
+}
+
 export function shell(progress, inner) {
   const lvl = levelFor(progress.xp)
   const mute = progress.mute ? '🔇' : '🔔'
@@ -29,7 +37,7 @@ export function shell(progress, inner) {
     <div class="relative mx-auto min-h-dvh max-w-5xl px-4 pb-16 pt-5 sm:px-6">
       <header class="mb-6 flex items-center justify-between gap-3">
         <button data-action="home" class="flex items-center gap-3 text-left">
-          <span class="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-gold to-gold-deep text-lg shadow-[0_0_24px_rgba(232,197,71,.35)]">📿</span>
+          ${tercoIcon('h-14 w-14 drop-shadow-[0_0_14px_rgba(232,197,71,.45)]', 'Rosário Quest')}
           <span>
             <span class="font-display block text-2xl leading-none text-gold">Rosário Quest</span>
             <span class="text-xs tracking-wide text-ink/60">os mistérios em ordem</span>
@@ -50,7 +58,7 @@ export function shell(progress, inner) {
 export function onboarding() {
   return `
     <section class="mx-auto mt-8 max-w-lg rise glass rounded-[2rem] p-8 text-center">
-      <p class="text-4xl">🌹</p>
+      ${tercoIcon('mx-auto h-24 w-24 drop-shadow-[0_0_18px_rgba(232,197,71,.4)]')}
       <h1 class="font-display mt-3 text-4xl text-gold">Ave, peregrino.</h1>
       <p class="mt-3 text-ink/75">Uma brincadeira católica para aprender a ordem dos mistérios do Santo Rosário. Sem conta, sem senha — só o terço e um pouco de jogo.</p>
       <label class="mt-6 block text-left text-sm text-ink/70">Como te chamamos?</label>
@@ -130,7 +138,7 @@ function isToday(date) {
 function stat(emoji, value, label) {
   return `
     <div class="glass rounded-2xl px-3 py-4 text-center">
-      <div class="text-xl">${emoji}</div>
+      <div class="flex min-h-11 items-center justify-center text-xl">${mark(emoji, 'h-11 w-11')}</div>
       <div class="font-display text-2xl text-gold">${value}</div>
       <div class="text-[11px] uppercase tracking-wide text-ink/50">${label}</div>
     </div>
@@ -140,7 +148,7 @@ function stat(emoji, value, label) {
 function modeCard(action, emoji, title, sub, blurb) {
   return `
     <button data-action="${action}" class="glass rounded-[1.6rem] p-5 text-left transition hover:-translate-y-0.5">
-      <div class="text-2xl">${emoji}</div>
+      <div class="flex h-14 items-center text-2xl">${mark(emoji, 'h-14 w-14')}</div>
       <h3 class="font-display mt-2 text-2xl">${title}</h3>
       <p class="text-sm text-gold/80">${sub}</p>
       <p class="mt-2 text-sm text-ink/65">${blurb}</p>
@@ -261,7 +269,7 @@ export function resultSort(game, tally, progress, unlocked) {
   const lvl = levelFor(progress.xp)
   return `
     <section class="rise mx-auto max-w-xl text-center">
-      ${perfect ? `<div class="seal mx-auto pop font-display text-xl leading-tight"><span>Dezena</span><span>perfeita</span></div>` : `<div class="text-5xl pop">📿</div>`}
+      ${perfect ? `<div class="seal mx-auto pop font-display text-xl leading-tight"><span>Dezena</span><span>perfeita</span></div>` : `<div class="pop mx-auto w-fit">${tercoIcon('h-24 w-24')}</div>`}
       <h1 class="font-display mt-5 text-4xl text-gold">${perfect ? 'Ordem celeste!' : `${tally.correct} de 5`}</h1>
       <p class="mt-2 text-ink/75">${praise}</p>
       <div class="mt-6 grid grid-cols-3 gap-3">
@@ -270,7 +278,7 @@ export function resultSort(game, tally, progress, unlocked) {
         ${stat('🔥', progress.streak, 'sequência')}
       </div>
       <p class="mt-4 text-sm text-ink/55">${lvl.current.name} · ${progress.xp} XP</p>
-      ${unlocked.length ? `<div class="mt-4 space-y-2">${unlocked.map((a) => `<p class="glass rounded-2xl px-4 py-3">🏅 Nova conquista: <b>${a.emoji} ${a.name}</b></p>`).join('')}</div>` : ''}
+      ${unlocked.length ? `<div class="mt-4 space-y-2">${unlocked.map((a) => `<p class="glass rounded-2xl px-4 py-3">🏅 Nova conquista: <b class="inline-flex items-center gap-1">${mark(a.emoji, 'h-5 w-5')} ${a.name}</b></p>`).join('')}</div>` : ''}
       <div class="mt-6 space-y-2 text-left">
         ${game.slots.map((m, i) => {
           const ok = game.results[i]?.ok
@@ -333,7 +341,7 @@ export function resultQuiz(tally, progress, unlocked) {
         ${stat('🔥', progress.streak, 'sequência')}
         ${stat('📿', progress.beads, 'contas')}
       </div>
-      ${unlocked.length ? `<div class="mt-4 space-y-2">${unlocked.map((a) => `<p class="glass rounded-2xl px-4 py-3">🏅 ${a.emoji} ${a.name}</p>`).join('')}</div>` : ''}
+      ${unlocked.length ? `<div class="mt-4 space-y-2">${unlocked.map((a) => `<p class="glass flex items-center justify-center gap-2 rounded-2xl px-4 py-3">🏅 ${mark(a.emoji, 'h-5 w-5')} ${a.name}</p>`).join('')}</div>` : ''}
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <button data-action="play-quiz" class="btn-gold rounded-2xl px-5 py-3 font-extrabold">Outra rodada</button>
         <button data-action="home" class="glass rounded-2xl px-5 py-3">Início</button>
@@ -436,7 +444,7 @@ export function achievements(progress) {
       <div class="mt-5 grid gap-3 sm:grid-cols-2">
         ${ACHIEVEMENTS.map((a) => `
           <div class="glass rounded-[1.4rem] p-4 ${have.has(a.id) ? '' : 'opacity-40'}">
-            <div class="text-2xl">${a.emoji}</div>
+            <div class="flex h-12 items-center text-2xl">${mark(a.emoji, 'h-12 w-12')}</div>
             <h3 class="mt-1 font-bold">${a.name}</h3>
             <p class="text-sm text-ink/65">${a.desc}</p>
           </div>
