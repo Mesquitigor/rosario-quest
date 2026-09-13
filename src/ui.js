@@ -169,7 +169,10 @@ export function ready(pending) {
   const copy = readyCopy(pending)
   return `
     <section class="rise mx-auto max-w-md text-center">
-      <button data-action="${copy.back}" data-set="${pending?.setId || ''}" class="glass ml-0 mr-auto grid h-10 w-10 place-items-center rounded-full">✕</button>
+      <div class="flex items-center justify-between">
+        <button type="button" data-action="${copy.back}" data-set="${pending?.setId || ''}" class="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Fechar">✕</button>
+        <button type="button" data-action="home" class="type-meta text-ink/70">Início</button>
+      </div>
       ${copy.hero}
       <p class="type-kicker mt-2 text-ink/45">${copy.kicker}</p>
       <h1 class="type-title mt-2 text-gold">${copy.title}</h1>
@@ -193,7 +196,7 @@ function readyCopy(pending) {
   if (pending?.kind === 'dezena') {
     const set = SETS[pending.setId]
     return {
-      back: pending.from || 'choose-set',
+      back: exitAction(pending.from),
       kicker: `Nível · ${set.name}`,
       title: set.title,
       blurb: `${set.mood} Toque na ordem.`,
@@ -253,7 +256,7 @@ export function playSort(game) {
 
   return `
     <section class="rise">
-      ${backRow(title, game.mode === 'daily' ? 'home' : 'play-hub')}
+      ${backRow(title, game.mode === 'daily' ? 'home' : 'play-hub', true)}
       <div class="mt-3 flex items-center justify-between gap-3 type-meta text-ink/50">
         <span>${filled}/${total}</span>
         <span>${hint}</span>
@@ -313,6 +316,7 @@ export function resultSort(game, tally, progress, unlocked) {
       ${sortReview(game)}
       <button data-action="replay" class="btn-gold mt-6 w-full rounded-full px-5 py-4">Reiniciar</button>
       <button data-action="choose-other" class="glass mt-3 w-full rounded-full px-5 py-3 type-body">Escolher outro mistério</button>
+      <button data-action="home" class="type-body mt-3 w-full rounded-full px-5 py-3 text-ink/70">Início</button>
     </section>
   `
 }
@@ -348,9 +352,10 @@ export function playQuiz(quiz) {
   const score = quiz.answers.filter((a) => a.ok).length
   return `
     <section class="rise mx-auto max-w-md">
-      <div class="flex items-center justify-between">
-        <button data-action="play-hub" class="glass grid h-10 w-10 place-items-center rounded-full">✕</button>
-        <span class="type-num grid h-12 w-12 place-items-center rounded-full border-2 border-gold text-lg text-gold">${String(n).padStart(2, '0')}</span>
+      <div class="flex items-center gap-2">
+        <button type="button" data-action="play-hub" class="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Fechar">✕</button>
+        <button type="button" data-action="home" class="type-meta text-ink/70">Início</button>
+        <span class="type-num ml-auto grid h-12 w-12 place-items-center rounded-full border-2 border-gold text-lg text-gold">${String(n).padStart(2, '0')}</span>
         <span class="type-num text-lg text-gold">${score}/${total}</span>
       </div>
       <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -560,11 +565,18 @@ export function achievements(progress) {
   `
 }
 
-function backRow(title, action = 'home') {
+function exitAction(from) {
+  if (from === 'hub') return 'home'
+  if (from === 'learn-set' || from === 'choose-set' || from === 'play-hub' || from === 'learn') return from
+  return 'home'
+}
+
+function backRow(title, action = 'home', showHome = false) {
   return `
     <div class="flex items-center gap-3">
-      <button data-action="${action}" class="glass grid h-10 w-10 place-items-center rounded-full">←</button>
-      <h1 class="type-heading text-gold">${title}</h1>
+      <button type="button" data-action="${action}" class="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Voltar">←</button>
+      <h1 class="type-heading min-w-0 flex-1 text-gold">${title}</h1>
+      ${showHome ? '<button type="button" data-action="home" class="type-meta shrink-0 text-ink/70">Início</button>' : ''}
     </div>
   `
 }

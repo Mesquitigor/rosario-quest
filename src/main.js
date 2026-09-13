@@ -77,7 +77,12 @@ function render() {
   app.innerHTML = shell(p, inner, screen)
 }
 
+let quizAdvanceTimer = 0
+
 function go(screen) {
+  if (screen !== 'quiz' && screen !== 'quiz-result') {
+    window.clearTimeout(quizAdvanceTimer)
+  }
   state.screen = screen
   render()
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -186,7 +191,7 @@ app.addEventListener('click', (event) => {
   closeRankTips()
   if (!btn) return
 
-  if (action === 'home') go('hub')
+  if (action === 'home' || action === 'hub') go('hub')
   if (action === 'play-hub') go('play-hub')
   if (action === 'how') go('how')
   if (action === 'learn') go('learn')
@@ -283,7 +288,8 @@ app.addEventListener('click', (event) => {
       expected: expected?.label || '',
     }]
     quiz.locked = true
-    setTimeout(() => {
+    quizAdvanceTimer = window.setTimeout(() => {
+      if (state.screen !== 'quiz' || state.quiz !== quiz) return
       if (quiz.index + 1 >= quiz.questions.length) {
         const tally = scoreQuiz(answers)
         const before = [...state.progress.achievements]
