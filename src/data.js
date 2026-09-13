@@ -319,19 +319,19 @@ export const LEVELS = [
 ]
 
 export const ACHIEVEMENTS = [
-  { id: 'primeiro-passo', name: 'Primeira Ave', desc: 'Termine o primeiro jogo.', emoji: '🌱' },
-  { id: 'dezena-perfeita', name: 'Dezena perfeita', desc: 'Acerte a ordem das 5 contas.', emoji: '💎' },
-  { id: 'quatro-luzes', name: 'Quatro coroas', desc: 'Complete os quatro conjuntos ao menos uma vez.', emoji: '💠' },
-  { id: 'chama-sete', name: 'Chama de sete dias', desc: 'Mantenha uma sequência de 7 dias.', emoji: '🔥' },
-  { id: 'relampago', name: 'Relâmpago', desc: 'Acerte 8 perguntas no quiz.', emoji: '⚡' },
-  { id: 'cronista', name: 'Rosário em ordem', desc: 'Acerte os 20 mistérios do Rosário completo.', emoji: '📿' },
-  { id: 'linha-tempo', name: 'Cronista', desc: 'Acerte a linha do tempo com 8 cenas.', emoji: '📜' },
-  { id: 'vinte-contas', name: 'Rosário completo', desc: 'Junte 20 contas de luz.', emoji: '📿' },
-  { id: 'mestre-gozoso', name: 'Mestre gozoso', desc: 'Três dezenas perfeitas dos Gozosos.', emoji: '🌟' },
-  { id: 'mestre-luminoso', name: 'Mestre luminoso', desc: 'Três dezenas perfeitas dos Luminosos.', emoji: '✨' },
-  { id: 'mestre-doloroso', name: 'Mestre doloroso', desc: 'Três dezenas perfeitas dos Dolorosos.', emoji: '✝️' },
-  { id: 'mestre-glorioso', name: 'Mestre glorioso', desc: 'Três dezenas perfeitas dos Gloriosos.', emoji: '👑' },
-  { id: 'peregrino', name: 'Caminho aberto', desc: 'Alcance o nível Peregrino.', emoji: '🚶' },
+  { id: 'primeiro-passo', name: 'Primeira Ave', desc: 'Termine qualquer modo uma vez.', emoji: '🌱' },
+  { id: 'dezena-perfeita', name: 'Dezena perfeita', desc: 'Acerte as 5 contas de um conjunto, na ordem.', emoji: '💎' },
+  { id: 'quatro-luzes', name: 'Quatro coroas', desc: 'Jogue os quatro conjuntos: Gozosos, Luminosos, Dolorosos e Gloriosos.', emoji: '💠' },
+  { id: 'chama-sete', name: 'Chama de sete dias', desc: 'Jogue pelo menos uma vez por dia, sete dias seguidos.', emoji: '🔥' },
+  { id: 'relampago', name: 'Relâmpago', desc: 'Acerte 8 das 10 perguntas no quiz relâmpago.', emoji: '⚡' },
+  { id: 'cronista', name: 'Rosário em ordem', desc: 'Acerte os 20 mistérios no modo Rosário completo.', emoji: '📿' },
+  { id: 'linha-tempo', name: 'Cronista', desc: 'Acerte as 8 cenas da linha do tempo, na ordem da vida de Cristo.', emoji: '📜' },
+  { id: 'vinte-contas', name: 'Rosário completo', desc: 'Some 20 acertos. Cada mistério certo vira uma conta de luz.', emoji: '📿' },
+  { id: 'mestre-gozoso', name: 'Mestre gozoso', desc: 'Acerte 3 vezes a dezena dos Mistérios Gozosos.', emoji: '🌟' },
+  { id: 'mestre-luminoso', name: 'Mestre luminoso', desc: 'Acerte 3 vezes a dezena dos Mistérios Luminosos.', emoji: '✨' },
+  { id: 'mestre-doloroso', name: 'Mestre doloroso', desc: 'Acerte 3 vezes a dezena dos Mistérios Dolorosos.', emoji: '✝️' },
+  { id: 'mestre-glorioso', name: 'Mestre glorioso', desc: 'Acerte 3 vezes a dezena dos Mistérios Gloriosos.', emoji: '👑' },
+  { id: 'peregrino', name: 'Caminho aberto', desc: 'Chegue a 400 XP e ao nível Peregrino.', emoji: '🚶' },
 ]
 
 export function mysteriesOf(setId) {

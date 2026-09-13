@@ -1,5 +1,6 @@
 import {
   ACHIEVEMENTS,
+  LEVELS,
   NUDGES,
   PRAISES,
   SETS,
@@ -501,12 +502,37 @@ export function achievements(progress) {
           <div class="type-kicker mt-1 text-ink/45">perfeitas</div>
         </div>
       </div>
-      <p class="type-meta mt-6 text-ink/55">${have.size} de ${ACHIEVEMENTS.length} selos</p>
-      <div class="mt-3 grid grid-cols-2 gap-3">
+
+      <h2 class="type-kicker mt-8 text-ink/45">Níveis</h2>
+      <p class="type-meta mt-1 text-ink/55">${progress.xp} XP · ${lvl.next ? `faltam ${lvl.next.min - progress.xp} para ${lvl.next.name}` : 'nível máximo'}</p>
+      <div class="mt-3 space-y-2">
+        ${LEVELS.map((level, i) => {
+          const unlocked = progress.xp >= level.min
+          const isNow = lvl.current.name === level.name
+          return `
+            <div class="level-row ${isNow ? 'is-now' : ''} ${unlocked ? '' : 'is-locked'}">
+              <span class="type-num grid h-9 w-9 shrink-0 place-items-center rounded-full ${isNow ? 'bg-gold text-[#3a2208]' : 'bg-white/10'}">${i + 1}</span>
+              <span class="min-w-0 flex-1 text-left">
+                <span class="type-item block">${level.name}</span>
+                <span class="type-meta block text-ink/55">${level.blurb}</span>
+              </span>
+              <span class="type-num shrink-0 text-gold">${level.min} XP</span>
+            </div>
+          `
+        }).join('')}
+      </div>
+
+      <h2 class="type-kicker mt-8 text-ink/45">Como conquistar</h2>
+      <p class="type-meta mt-1 text-ink/55">${have.size} de ${ACHIEVEMENTS.length} selos</p>
+      <div class="mt-3 space-y-2">
         ${ACHIEVEMENTS.map((a) => `
-          <div class="glass rounded-[1.3rem] p-4 ${have.has(a.id) ? '' : 'opacity-35'}">
-            <div class="flex h-10 items-center">${mark(a.emoji, 'h-10 w-10')}</div>
-            <h3 class="type-item mt-1">${a.name}</h3>
+          <div class="seal-row ${have.has(a.id) ? 'is-have' : 'is-locked'}">
+            <span class="grid h-10 w-10 shrink-0 place-items-center">${mark(a.emoji, 'h-8 w-8')}</span>
+            <span class="min-w-0 flex-1 text-left">
+              <span class="type-item block">${a.name}</span>
+              <span class="type-meta block text-ink/60">${a.desc}</span>
+            </span>
+            <span class="type-meta shrink-0">${have.has(a.id) ? '✓' : ''}</span>
           </div>
         `).join('')}
       </div>
