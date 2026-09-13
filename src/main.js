@@ -164,8 +164,27 @@ function clearRanks() {
 
 app.addEventListener('click', (event) => {
   const btn = event.target.closest('[data-action]')
+  const action = btn?.dataset.action
+
+  const closeRankTips = () => {
+    app.querySelectorAll('.rank-node.is-open').forEach((node) => {
+      node.classList.remove('is-open')
+      node.setAttribute('aria-expanded', 'false')
+    })
+  }
+
+  if (action === 'peek-rank') {
+    const open = btn.classList.contains('is-open')
+    closeRankTips()
+    if (!open) {
+      btn.classList.add('is-open')
+      btn.setAttribute('aria-expanded', 'true')
+    }
+    return
+  }
+
+  closeRankTips()
   if (!btn) return
-  const action = btn.dataset.action
 
   if (action === 'home') go('hub')
   if (action === 'play-hub') go('play-hub')

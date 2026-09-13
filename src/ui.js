@@ -529,10 +529,17 @@ export function achievements(progress) {
             const on = nowXp >= level.min
             const isNow = i === idx
             return `
-              <div class="rank-node ${on ? 'is-on' : ''} ${isNow ? 'is-now' : ''}" title="${level.name} · ${level.min} XP">
+              <button
+                type="button"
+                class="rank-node ${on ? 'is-on' : ''} ${isNow ? 'is-now' : ''}"
+                data-action="peek-rank"
+                aria-expanded="false"
+                aria-label="${escapeHtml(level.name)}, ${level.min} XP"
+              >
+                <span class="rank-tip">${escapeHtml(level.name)}</span>
                 <span class="rank-dot">${i + 1}</span>
                 <span class="rank-node-xp">${level.min}</span>
-              </div>
+              </button>
             `
           }).join('')}
         </div>
