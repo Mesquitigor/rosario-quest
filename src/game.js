@@ -3,6 +3,7 @@ import {
   LEVELS,
   MYSTERIES,
   SETS,
+  SET_ORDER,
   localDateKey,
   mysteriesOf,
 } from './data.js'
@@ -34,82 +35,76 @@ export function dateSeed(key) {
   return [...key].reduce((acc, ch) => acc + ch.charCodeAt(0) * 13, 11)
 }
 
-export function dealDezena(setId) {
-  const items = mysteriesOf(setId)
-  let pool = shuffle(items)
-  if (pool.every((m, i) => m.order === i + 1)) pool = shuffle(items)
+function dealBoard(items, mode, setId, pool) {
+  let cards = pool || shuffle(items)
+  if (sameOrder(cards, expectedOrder(items, mode), 'id')) cards = shuffle(items)
   return {
-    mode: 'dezena',
+    mode,
     setId,
     items,
-    pool,
-    slots: [null, null, null, null, null],
-    selectedId: null,
+    pool: cards,
+    picked: [],
     startedAt: Date.now(),
-    hintsUsed: 0,
     checked: false,
-    reveal: false,
   }
+}
+
+export function dealDezena(setId) {
+  return dealBoard(mysteriesOf(setId), 'dezena', setId)
 }
 
 export function dealDaily(setId, dateKey) {
-  const game = dealDezena(setId)
-  game.mode = 'daily'
-  game.pool = seedShuffle(mysteriesOf(setId), dateSeed(dateKey) + 17)
-  if (game.pool.every((m, i) => m.order === i + 1)) {
-    game.pool = seedShuffle(mysteriesOf(setId), dateSeed(dateKey) + 91)
-  }
-  return game
+  const items = mysteriesOf(setId)
+  const pool = seedShuffle(items, dateSeed(dateKey) + 17)
+  return dealBoard(items, 'daily', setId, pool)
 }
 
+export function dealRosary() {
+  const items = [...MYSTERIES].sort((a, b) => a.chrono - b.chrono)
+  return dealBoard(items, 'rosary', null)
+}
+
+export const TIMELINE_COUNT = 8
+
 export function dealTimeline() {
-  const picked = shuffle(MYSTERIES).slice(0, 5)
-  const sorted = [...picked].sort((a, b) => a.chrono - b.chrono)
-  let pool = shuffle(picked)
-  if (sameOrder(pool, sorted, 'id')) pool = shuffle(picked)
-  return {
-    mode: 'timeline',
-    setId: null,
-    items: sorted,
-    pool,
-    slots: [null, null, null, null, null],
-    selectedId: null,
-    startedAt: Date.now(),
-    hintsUsed: 0,
-    checked: false,
-    reveal: false,
-  }
+  const picked = shuffle(MYSTERIES).slice(0, TIMELINE_COUNT)
+  const items = [...picked].sort((a, b) => a.chrono - b.chrono)
+  return dealBoard(items, 'timeline', null)
 }
 
 function sameOrder(a, b, key) {
   return a.length === b.length && a.every((item, i) => item[key] === b[i][key])
 }
 
-export function evaluateSort(game) {
-  const expected = game.mode === 'timeline'
-    ? game.items
-    : [...game.items].sort((a, b) => a.order - b.order)
+function expectedOrder(items, mode) {
+  if (mode === 'rosary' || mode === 'timeline') {
+    return [...items].sort((a, b) => a.chrono - b.chrono)
+  }
+  return [...items].sort((a, b) => a.order - b.order)
+}
 
-  return game.slots.map((slot, i) => {
-    if (!slot) return { ok: false, empty: true, expected: expected[i] }
-    return {
-      ok: slot.id === expected[i].id,
-      empty: false,
-      expected: expected[i],
-    }
+export function evaluateSort(game) {
+  const expected = expectedOrder(game.items, game.mode)
+  return expected.map((m, i) => {
+    const placedId = game.picked[i]
+    if (!placedId) return { ok: false, empty: true, expected: m }
+    return { ok: placedId === m.id, empty: false, expected: m }
   })
 }
 
-export function scoreSort(results, seconds, hintsUsed, daily) {
+export function scoreSort(results, seconds, daily) {
+  const total = results.length
   const filled = results.filter((r) => !r.empty).length
   const correct = results.filter((r) => r.ok).length
-  const perfect = correct === 5
-  const timeBonus = perfect ? Math.max(0, 35 - Math.floor(seconds)) : 0
-  const hintPenalty = hintsUsed * 12
-  let xp = correct * 22 + (perfect ? 70 : 0) + timeBonus - hintPenalty
+  const perfect = correct === total && filled === total
+  const per = total >= 20 ? 10 : total > 5 ? 14 : 22
+  const bonus = perfect ? (total >= 20 ? 120 : total > 5 ? 80 : 70) : 0
+  const cap = total >= 20 ? 150 : total > 5 ? 80 : 40
+  const timeBonus = perfect ? Math.max(0, cap - Math.floor(seconds)) : 0
+  let xp = correct * per + bonus + timeBonus
   if (daily) xp = Math.round(xp * 1.45)
   xp = Math.max(filled ? 8 : 0, xp)
-  return { correct, perfect, xp, timeBonus, seconds: Math.floor(seconds) }
+  return { correct, total, perfect, xp, timeBonus, seconds: Math.floor(seconds) }
 }
 
 export function applySortResult(progress, game, tally) {
@@ -131,7 +126,9 @@ export function applySortResult(progress, game, tally) {
       }
     }
   }
-  if (game.setId) {
+  if (game.mode === 'rosary') {
+    next.completedSets = { ...next.completedSets, ...Object.fromEntries(SET_ORDER.map((id) => [id, true])) }
+  } else if (game.setId) {
     next.completedSets = { ...next.completedSets, [game.setId]: true }
     next.bestBySet = {
       ...next.bestBySet,
@@ -154,7 +151,7 @@ export function dealQuiz() {
   const questions = []
   const used = new Set()
 
-  while (questions.length < 6) {
+  while (questions.length < 10) {
     const type = questions.length % 3
     if (type === 0) {
       const m = pickUnused(MYSTERIES, used)
@@ -242,8 +239,9 @@ function unlockAchievements(progress, ctx) {
   if (progress.perfects >= 1) grant('dezena-perfeita')
   if (Object.keys(progress.completedSets).length >= 4) grant('quatro-luzes')
   if (progress.streak >= 7) grant('chama-sete')
-  if ((progress.quizBest || 0) >= 5) grant('relampago')
-  if (ctx.kind === 'sort' && ctx.game.mode === 'timeline' && ctx.tally.perfect) grant('cronista')
+  if ((progress.quizBest || 0) >= 8) grant('relampago')
+  if (ctx.kind === 'sort' && ctx.game.mode === 'rosary' && ctx.tally.perfect) grant('cronista')
+  if (ctx.kind === 'sort' && ctx.game.mode === 'timeline' && ctx.tally.perfect) grant('linha-tempo')
   if (progress.rosaries >= 1 || progress.beads + progress.rosaries * 20 >= 20) grant('vinte-contas')
   if ((progress.perfectsBySet.gozosos || 0) >= 3) grant('mestre-gozoso')
   if ((progress.perfectsBySet.luminosos || 0) >= 3) grant('mestre-luminoso')
@@ -255,29 +253,3 @@ function unlockAchievements(progress, ctx) {
   return [...have]
 }
 
-export function hintSlot(game) {
-  const expected = game.mode === 'timeline'
-    ? game.items
-    : [...game.items].sort((a, b) => a.order - b.order)
-
-  const wrongIndex = game.slots.findIndex((slot, i) => !slot || slot.id !== expected[i].id)
-  if (wrongIndex < 0) return game
-
-  const need = expected[wrongIndex]
-  const slots = [...game.slots]
-  const pool = [...game.pool]
-  const fromSlot = slots.findIndex((s) => s?.id === need.id)
-  const occupied = slots[wrongIndex]
-
-  if (fromSlot >= 0) {
-    slots[fromSlot] = occupied
-    slots[wrongIndex] = need
-  } else {
-    const poolIndex = pool.findIndex((s) => s.id === need.id)
-    if (poolIndex >= 0) pool.splice(poolIndex, 1)
-    if (occupied) pool.push(occupied)
-    slots[wrongIndex] = need
-  }
-
-  return { ...game, slots, pool, hintsUsed: game.hintsUsed + 1, selectedId: null }
-}

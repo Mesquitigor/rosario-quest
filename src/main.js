@@ -8,9 +8,9 @@ import {
   dealDaily,
   dealDezena,
   dealQuiz,
+  dealRosary,
   dealTimeline,
   evaluateSort,
-  hintSlot,
   scoreQuiz,
   scoreSort,
 } from './game.js'
@@ -44,7 +44,6 @@ const state = {
   learnSetId: null,
   lastSortMode: null,
   pending: null,
-  reviewOpen: false,
 }
 
 function sound(name) {
@@ -66,9 +65,9 @@ function render() {
   else if (state.screen === 'ready') inner = ready(state.pending)
   else if (state.screen === 'choose-set') inner = chooseSet(p)
   else if (state.screen === 'play') inner = playSort(state.game)
-  else if (state.screen === 'result') inner = resultSort(state.game, state.tally, p, state.unlocked, state.reviewOpen)
+  else if (state.screen === 'result') inner = resultSort(state.game, state.tally, p, state.unlocked)
   else if (state.screen === 'quiz') inner = playQuiz(state.quiz)
-  else if (state.screen === 'quiz-result') inner = resultQuiz(state.tally, p, state.unlocked)
+  else if (state.screen === 'quiz-result') inner = resultQuiz(state.tally, p, state.unlocked, state.quiz)
   else if (state.screen === 'learn') inner = learn()
   else if (state.screen === 'learn-set') inner = learnSet(state.learnSetId)
   else if (state.screen === 'how') inner = how()
@@ -76,7 +75,6 @@ function render() {
   else inner = hub(p)
 
   app.innerHTML = shell(p, inner, screen)
-  bindDrag()
 }
 
 function go(screen) {
@@ -98,6 +96,12 @@ function startDaily(practice = false) {
   go('play')
 }
 
+function startRosary() {
+  state.game = dealRosary()
+  state.lastSortMode = { type: 'rosary' }
+  go('play')
+}
+
 function startTimeline() {
   state.game = dealTimeline()
   state.lastSortMode = { type: 'timeline' }
@@ -113,9 +117,19 @@ function startPending() {
   const pending = state.pending
   if (!pending) return
   if (pending.kind === 'daily') startDaily()
+  else if (pending.kind === 'rosary') startRosary()
   else if (pending.kind === 'timeline') startTimeline()
   else if (pending.kind === 'quiz') startQuiz()
   else if (pending.kind === 'dezena') startDezena(pending.setId)
+}
+
+function restartLast() {
+  const last = state.lastSortMode
+  if (!last) return
+  if (last.type === 'daily') startDaily(true)
+  else if (last.type === 'rosary') startRosary()
+  else if (last.type === 'timeline') startTimeline()
+  else startDezena(last.setId || todaySetId())
 }
 
 function newUnlocks(before, after) {
@@ -123,92 +137,29 @@ function newUnlocks(before, after) {
   return ACHIEVEMENTS.filter((a) => after.includes(a.id) && !prev.has(a.id))
 }
 
-function placeCard(id, slotIndex) {
+function toggleRank(id) {
   const game = state.game
   if (!game || game.checked) return
-  const fromPool = game.pool.find((m) => m.id === id)
-  const fromSlot = game.slots.findIndex((m) => m?.id === id)
-  const occupied = game.slots[slotIndex]
-  const slots = [...game.slots]
-  const pool = [...game.pool]
-
-  if (fromPool) {
-    pool.splice(pool.findIndex((m) => m.id === id), 1)
-    if (occupied) pool.push(occupied)
-    slots[slotIndex] = fromPool
-  } else if (fromSlot >= 0) {
-    slots[fromSlot] = occupied
-    slots[slotIndex] = game.slots[fromSlot]
+  const picked = [...game.picked]
+  const idx = picked.indexOf(id)
+  if (idx >= 0) {
+    picked.splice(idx, 1)
+    sound('tap')
+  } else {
+    if (picked.length >= game.items.length) return
+    picked.push(id)
+    sound('place')
   }
-
-  state.game = { ...game, slots, pool, selectedId: null, results: null, checked: false }
-  sound('place')
+  state.game = { ...game, picked, results: null }
   render()
 }
 
-function pickCard(id) {
+function clearRanks() {
   const game = state.game
-  if (!game || game.checked) return
-  if (game.selectedId === id) {
-    state.game = { ...game, selectedId: null }
-    render()
-    return
-  }
-  if (game.selectedId) {
-    const selectedSlot = game.slots.findIndex((m) => m?.id === game.selectedId)
-    const targetSlot = game.slots.findIndex((m) => m?.id === id)
-    if (selectedSlot >= 0 && targetSlot >= 0) {
-      const slots = [...game.slots]
-      ;[slots[selectedSlot], slots[targetSlot]] = [slots[targetSlot], slots[selectedSlot]]
-      state.game = { ...game, slots, selectedId: null }
-      sound('place')
-      render()
-      return
-    }
-    if (targetSlot >= 0) {
-      placeCard(game.selectedId, targetSlot)
-      return
-    }
-  }
-  state.game = { ...game, selectedId: id }
+  if (!game || game.checked || !game.picked.length) return
+  state.game = { ...game, picked: [], results: null }
   sound('tap')
   render()
-}
-
-function returnToPool(id) {
-  const game = state.game
-  const slotIndex = game.slots.findIndex((m) => m?.id === id)
-  if (slotIndex < 0) return
-  const slots = [...game.slots]
-  const card = slots[slotIndex]
-  slots[slotIndex] = null
-  state.game = { ...game, slots, pool: [...game.pool, card], selectedId: null, results: null }
-  sound('tap')
-  render()
-}
-
-function bindDrag() {
-  if (state.screen !== 'play' || !state.game) return
-  const cards = app.querySelectorAll('[data-action="pick-card"]')
-  cards.forEach((card) => {
-    card.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', card.dataset.id)
-      e.dataTransfer.effectAllowed = 'move'
-    })
-  })
-  app.querySelectorAll('[data-slot]').forEach((slot) => {
-    slot.addEventListener('dragover', (e) => {
-      e.preventDefault()
-      slot.classList.add('is-hot')
-    })
-    slot.addEventListener('dragleave', () => slot.classList.remove('is-hot'))
-    slot.addEventListener('drop', (e) => {
-      e.preventDefault()
-      slot.classList.remove('is-hot')
-      const id = e.dataTransfer.getData('text/plain')
-      if (id) placeCard(id, Number(slot.dataset.slot))
-    })
-  })
 }
 
 app.addEventListener('click', (event) => {
@@ -223,10 +174,13 @@ app.addEventListener('click', (event) => {
   if (action === 'achievements') go('achievements')
   if (action === 'choose-set') go('choose-set')
   if (action === 'play-daily') startDaily()
-  if (action === 'play-timeline') startTimeline()
   if (action === 'play-quiz') startQuiz()
   if (action === 'ready-daily') {
     state.pending = { kind: 'daily' }
+    go('ready')
+  }
+  if (action === 'ready-rosary') {
+    state.pending = { kind: 'rosary' }
     go('ready')
   }
   if (action === 'ready-timeline') {
@@ -242,10 +196,6 @@ app.addEventListener('click', (event) => {
     go('ready')
   }
   if (action === 'start-ready') startPending()
-  if (action === 'toggle-review') {
-    state.reviewOpen = !state.reviewOpen
-    render()
-  }
   if (action === 'learn-set') {
     state.learnSetId = btn.dataset.set || state.learnSetId
     go(state.learnSetId ? 'learn-set' : 'learn')
@@ -265,65 +215,32 @@ app.addEventListener('click', (event) => {
     go('hub')
   }
 
-  if (action === 'pick-card') {
-    const id = btn.dataset.id
-    const inSlot = state.game?.slots.some((m) => m?.id === id)
-    if (inSlot && state.game.selectedId && state.game.selectedId !== id) {
-      const slotIndex = state.game.slots.findIndex((m) => m?.id === id)
-      placeCard(state.game.selectedId, slotIndex)
-      return
-    }
-    if (inSlot && state.game.selectedId === id) {
-      returnToPool(id)
-      return
-    }
-    pickCard(id)
-  }
+  if (action === 'pick-card') toggleRank(btn.dataset.id)
 
-  if (action === 'pick-slot') {
-    if (state.game?.selectedId) placeCard(state.game.selectedId, Number(btn.dataset.slot))
-  }
-
-  if (action === 'hint') {
-    if (!state.game) return
-    state.game = hintSlot(state.game)
-    sound('streak')
-    render()
-  }
-
-  if (action === 'reset-board') {
-    if (!state.game) return
-    if (state.lastSortMode?.type === 'daily') startDaily(true)
-    else if (state.lastSortMode?.type === 'timeline') startTimeline()
-    else startDezena(state.lastSortMode?.setId || todaySetId())
-  }
+  if (action === 'reset-board') clearRanks()
 
   if (action === 'check-order') {
     const game = state.game
-    if (!game || game.slots.some((s) => !s)) return
+    if (!game || game.picked.length !== game.items.length) return
     const results = evaluateSort(game)
     const seconds = (Date.now() - game.startedAt) / 1000
-    const tally = scoreSort(results, seconds, game.hintsUsed, game.mode === 'daily')
+    const tally = scoreSort(results, seconds, game.mode === 'daily')
     const before = [...state.progress.achievements]
     state.progress = saveProgress(applySortResult(state.progress, game, tally))
     state.unlocked = newUnlocks(before, state.progress.achievements)
     state.game = { ...game, results, checked: true }
     state.tally = tally
-    state.reviewOpen = false
     if (tally.perfect) {
       sound('win')
       burstConfetti()
     } else {
-      sound(tally.correct >= 3 ? 'ok' : 'bad')
+      sound(tally.correct >= Math.ceil(game.items.length / 2) ? 'ok' : 'bad')
     }
     go('result')
   }
 
-  if (action === 'replay') {
-    if (state.lastSortMode?.type === 'daily') startDaily(true)
-    else if (state.lastSortMode?.type === 'timeline') startTimeline()
-    else startDezena(state.lastSortMode?.setId || todaySetId())
-  }
+  if (action === 'replay') restartLast()
+  if (action === 'choose-other') go('choose-set')
 
   if (action === 'quiz-answer') {
     const quiz = state.quiz
@@ -336,7 +253,16 @@ app.addEventListener('click', (event) => {
       const correct = app.querySelector(`[data-action="quiz-answer"][data-id="${CSS.escape(q.answer)}"]`)
       correct?.classList.add('is-ok')
     }
-    const answers = [...quiz.answers, { ok, id: btn.dataset.id }]
+    const chosen = q.options.find((o) => o.id === btn.dataset.id)
+    const expected = q.options.find((o) => o.id === q.answer)
+    const answers = [...quiz.answers, {
+      ok,
+      id: btn.dataset.id,
+      prompt: q.prompt,
+      detail: q.mystery?.title || '',
+      chosen: chosen?.label || '',
+      expected: expected?.label || '',
+    }]
     quiz.locked = true
     setTimeout(() => {
       if (quiz.index + 1 >= quiz.questions.length) {
@@ -344,6 +270,7 @@ app.addEventListener('click', (event) => {
         const before = [...state.progress.achievements]
         state.progress = saveProgress(applyQuizResult(state.progress, tally))
         state.unlocked = newUnlocks(before, state.progress.achievements)
+        state.quiz = { ...quiz, answers, locked: true }
         state.tally = tally
         if (tally.perfect) burstConfetti()
         go('quiz-result')

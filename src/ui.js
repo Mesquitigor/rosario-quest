@@ -8,6 +8,7 @@ import {
   mysteriesOf,
   todaySetId,
 } from './data.js'
+import { TIMELINE_COUNT } from './game.js'
 
 const accentClass = {
   joy: 'card-joy',
@@ -53,7 +54,7 @@ export function shell(progress, inner, screen = 'hub') {
     <div class="blob blob-rose"></div>
     <div class="blob blob-blue"></div>
     <div class="grain"></div>
-    <div class="relative mx-auto min-h-dvh max-w-lg px-4 pt-4 sm:max-w-xl sm:px-6 ${showNav ? 'pb-28' : 'pb-10'}">
+    <div class="relative mx-auto min-h-dvh max-w-lg px-4 pt-4 sm:max-w-xl sm:px-6 ${showNav ? 'pb-28' : screen === 'play' ? 'pb-8' : 'pb-10'}">
       ${header}
       ${inner}
       ${showNav ? bottomNav(screen) : ''}
@@ -140,9 +141,9 @@ export function playHub(progress) {
       <p class="type-body mt-1 text-ink/60">Escolha um modo. Um de cada vez.</p>
       <div class="mt-5 space-y-3">
         ${levelCard('ready-daily', '1', today.emoji, 'Desafio de hoje', today.name, dailyDone, 'card-glory')}
-        ${levelCard('choose-set', '2', '📿', 'Ordenar a dezena', 'Os 4 conjuntos', Object.keys(progress.completedSets || {}).length >= 4, 'card-joy')}
-        ${levelCard('ready-timeline', '3', '📜', 'Linha do tempo', 'A vida de Cristo', false, 'card-light')}
-        ${levelCard('ready-quiz', '4', '⚡', 'Quiz relâmpago', '6 perguntas rápidas', (progress.quizBest || 0) >= 5, 'card-sorrow')}
+        ${levelCard('ready-rosary', '2', '📿', 'Rosário completo', 'Os 20 mistérios', (progress.rosaries || 0) >= 1, 'card-joy')}
+        ${levelCard('ready-timeline', '3', '📜', 'Linha do tempo', `${TIMELINE_COUNT} cenas da vida de Cristo`, false, 'card-light')}
+        ${levelCard('ready-quiz', '4', '⚡', 'Quiz relâmpago', '10 perguntas rápidas', (progress.quizBest || 0) >= 8, 'card-sorrow')}
       </div>
       <button data-action="how" class="type-meta mt-5 w-full text-ink/50">Como jogar?</button>
     </section>
@@ -184,7 +185,7 @@ function readyCopy(pending) {
       back: 'home',
       kicker: 'Desafio de hoje',
       title: set.title,
-      blurb: 'Coloque as 5 contas na ordem certa.',
+      blurb: 'Toque nas 5 contas na ordem. O número aparece ao lado.',
       hero: tercoIcon('mx-auto mt-6 h-36 w-36 drop-shadow-[0_0_22px_rgba(232,197,71,.4)]'),
     }
   }
@@ -194,8 +195,17 @@ function readyCopy(pending) {
       back: pending.from || 'choose-set',
       kicker: `Nível · ${set.name}`,
       title: set.title,
-      blurb: set.mood,
+      blurb: `${set.mood} Toque na ordem.`,
       hero: `<div class="mt-6 text-6xl">${set.emoji}</div>`,
+    }
+  }
+  if (pending?.kind === 'rosary') {
+    return {
+      back: 'play-hub',
+      kicker: 'Nível 2',
+      title: 'Rosário completo',
+      blurb: 'Os quatro terços. Toque nos 20 mistérios na ordem da vida de Cristo.',
+      hero: tercoIcon('mx-auto mt-6 h-36 w-36 drop-shadow-[0_0_22px_rgba(232,197,71,.4)]'),
     }
   }
   if (pending?.kind === 'timeline') {
@@ -203,7 +213,7 @@ function readyCopy(pending) {
       back: 'play-hub',
       kicker: 'Nível 3',
       title: 'Linha do tempo',
-      blurb: 'Cinco cenas da história da salvação, misturadas.',
+      blurb: `${TIMELINE_COUNT} cenas misturadas, da Anunciação à coroação. Não é uma dezena.`,
       hero: '<div class="mt-6 text-6xl">📜</div>',
     }
   }
@@ -211,7 +221,7 @@ function readyCopy(pending) {
     back: 'play-hub',
     kicker: 'Nível 4',
     title: 'Quiz relâmpago',
-    blurb: 'Conjunto, sequência e o primeiro mistério.',
+    blurb: '10 perguntas: conjunto, sequência e o primeiro mistério.',
     hero: '<div class="mt-6 text-6xl">⚡</div>',
   }
 }
@@ -229,120 +239,124 @@ export function chooseSet(progress) {
 
 export function playSort(game) {
   const set = game.setId ? SETS[game.setId] : null
-  const title = game.mode === 'timeline' ? 'Linha do tempo' : set?.name || 'Dezena'
-  const filled = game.slots.filter(Boolean).length
-  const results = game.results || []
+  const title = game.mode === 'rosary' ? 'Rosário completo' : game.mode === 'timeline' ? 'Linha do tempo' : set?.name || 'Mistérios'
+  const total = game.items.length
+  const filled = game.picked.length
+  const ranks = new Map(game.picked.map((id, i) => [id, i + 1]))
+  const compact = game.mode === 'rosary' || game.mode === 'timeline'
+  const hint = game.mode === 'rosary'
+    ? 'Ordem da vida de Cristo'
+    : game.mode === 'timeline'
+      ? `${total} cenas, ordem histórica`
+      : 'Toque na ordem'
 
   return `
     <section class="rise">
       ${backRow(title, game.mode === 'daily' ? 'home' : 'play-hub')}
-      <div class="mt-3 flex items-center justify-between type-meta text-ink/50">
-        <span>${filled}/5 no terço</span>
-        <span>💡 ${game.hintsUsed}</span>
+      <div class="mt-3 flex items-center justify-between gap-3 type-meta text-ink/50">
+        <span>${filled}/${total}</span>
+        <span>${hint}</span>
       </div>
       <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
-        <div class="xp-fill h-full" style="width:${(filled / 5) * 100}%"></div>
+        <div class="xp-fill h-full" style="width:${(filled / total) * 100}%"></div>
       </div>
 
-      <div class="mt-5 space-y-3">
-        ${game.slots.map((slot, i) => slotRow(slot, i, results[i], game)).join('')}
+      <div class="sort-grid ${compact ? 'is-compact' : ''} mt-4">
+        ${game.pool.map((m) => beadTile(m, ranks.get(m.id), compact)).join('')}
       </div>
 
-      <p class="type-kicker mt-6 text-ink/40">Contas</p>
-      <div class="mt-2 grid gap-2">
-        ${game.pool.length
-          ? game.pool.map((m) => mysteryCard(m, game.selectedId === m.id, game.setId)).join('')
-          : '<p class="glass type-body rounded-2xl p-4 text-center text-ink/60">Tudo no terço. Confira.</p>'}
+      <div class="play-actions">
+        <button data-action="reset-board" class="glass type-body w-full rounded-full px-4 py-3" ${filled ? '' : 'disabled style="opacity:.45"'}>Limpar</button>
+        <button data-action="check-order" class="btn-gold mt-2 w-full rounded-full px-5 py-4" ${filled !== total ? 'disabled style="opacity:.45"' : ''}>Conferir</button>
       </div>
-
-      <div class="mt-6 grid grid-cols-2 gap-3">
-        <button data-action="hint" class="glass type-body rounded-full px-4 py-3">Dica</button>
-        <button data-action="reset-board" class="glass type-body rounded-full px-4 py-3">Embaralhar</button>
-      </div>
-      <button data-action="check-order" class="btn-gold mt-3 w-full rounded-full px-5 py-4" ${game.slots.some((s) => !s) ? 'disabled style="opacity:.45"' : ''}>Conferir</button>
     </section>
   `
 }
 
-function slotRow(slot, i, result, game) {
-  const state = result ? (result.ok ? 'is-ok' : 'is-bad') : ''
-  const label = game.mode === 'timeline' ? `${i + 1}º` : `${i + 1}º mistério`
-  return `
-    <div class="flex items-stretch gap-3">
-      <div class="relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold to-gold-deep type-num text-lg text-[#3a2208]">${i + 1}</div>
-      <div class="slot flex-1 p-2 ${state}" data-action="pick-slot" data-slot="${i}">
-        ${slot
-          ? mysteryCard(slot, game.selectedId === slot.id, slot.set, true)
-          : `<button type="button" data-action="pick-slot" data-slot="${i}" class="type-meta flex h-full min-h-[64px] w-full items-center justify-center text-ink/35">${label}</button>`}
-      </div>
-    </div>
-  `
-}
-
-function mysteryCard(m, selected, setId, compact = false) {
+function beadTile(m, rank, compact) {
   const set = SETS[m.set]
   return `
     <button
       type="button"
-      draggable="true"
       data-action="pick-card"
       data-id="${m.id}"
-      class="mystery-card ${accentClass[set.accent]} w-full rounded-2xl p-3 text-left ${selected ? 'is-selected' : ''}"
+      class="bead-tile ${accentClass[set.accent]} ${rank ? 'is-ranked' : ''}"
     >
-      <div class="flex items-center gap-3">
-        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-black/20 text-xl">${m.emoji}</span>
-        <span class="min-w-0">
-          <span class="type-item block">${m.title}</span>
-          <span class="type-meta block truncate text-ink/60">${compact ? set.name : m.short}</span>
-        </span>
-      </div>
+      <span class="${compact ? 'text-base' : 'text-xl'}">${m.emoji}</span>
+      <span class="min-w-0 flex-1 text-left">
+        <span class="type-item block leading-tight">${m.title}</span>
+        <span class="type-meta block truncate text-ink/55">${compact ? set.name : m.short}</span>
+      </span>
+      ${rank ? `<span class="rank-badge">${rank}</span>` : ''}
     </button>
   `
 }
 
-export function resultSort(game, tally, progress, unlocked, reviewOpen = false) {
+export function resultSort(game, tally, progress, unlocked) {
   const perfect = tally.perfect
+  const total = tally.total || game.items.length
   const praise = perfect ? PRAISES[Math.floor(Math.random() * PRAISES.length)] : NUDGES[Math.floor(Math.random() * NUDGES.length)]
+  const seal = game.mode === 'rosary'
+    ? `<div class="seal mx-auto pop"><span>Rosário</span><span>perfeito</span></div>`
+    : game.mode === 'timeline'
+      ? `<div class="seal mx-auto pop"><span>Linha</span><span>certa</span></div>`
+      : `<div class="seal mx-auto pop"><span>Dezena</span><span>perfeita</span></div>`
   return `
     <section class="rise mx-auto max-w-md text-center">
-      ${perfect
-        ? `<div class="seal mx-auto pop"><span>Dezena</span><span>perfeita</span></div>`
-        : `<div class="pop mx-auto w-fit">${tercoIcon('h-28 w-28')}</div>`}
-      <h1 class="type-title mt-5 text-gold">${perfect ? 'Mandou bem!' : `${tally.correct} de 5`}</h1>
-      <p class="type-body mt-2 text-ink/70">${praise}</p>
+      ${perfect ? seal : `<div class="pop mx-auto w-fit">${tercoIcon('h-28 w-28')}</div>`}
+      <h1 class="type-title mt-5 text-gold">${tally.correct}/${total}</h1>
+      <p class="type-body mt-2 text-ink/70">${perfect ? 'Mandou bem!' : praise}</p>
       <p class="type-score mt-4 text-gold">+${tally.xp} XP</p>
       <p class="type-meta text-ink/50">🔥 ${progress.streak} dias · ${tercoIcon('inline-block h-4 w-4')} ${progress.beads} contas</p>
       ${unlocked.length ? `<div class="mt-4 space-y-2">${unlocked.map((a) => `<p class="glass type-body rounded-2xl px-4 py-3">🏅 ${mark(a.emoji, 'inline-block h-5 w-5')} ${a.name}</p>`).join('')}</div>` : ''}
-      <button data-action="toggle-review" class="type-meta mt-5 text-ink/50">${reviewOpen ? 'Ocultar ordem' : 'Ver ordem'}</button>
-      ${reviewOpen ? `<div class="mt-3 space-y-2 text-left">${game.slots.map((m, i) => {
-        const ok = game.results[i]?.ok
-        const expected = game.results[i]?.expected
-        return `<div class="glass flex items-center gap-3 rounded-2xl px-3 py-2">
-          <span class="w-6 text-center">${ok ? '✅' : '❌'}</span>
-          <span class="type-body"><b>${i + 1}.</b> ${ok ? m.title : expected.title}</span>
-        </div>`
-      }).join('')}</div>` : ''}
-      <button data-action="replay" class="btn-gold mt-6 w-full rounded-full px-5 py-4">Jogar de novo</button>
-      <button data-action="home" class="type-body mt-3 w-full rounded-full px-5 py-3 text-ink/70">Início</button>
+      ${sortReview(game)}
+      <button data-action="replay" class="btn-gold mt-6 w-full rounded-full px-5 py-4">Reiniciar</button>
+      <button data-action="choose-other" class="glass mt-3 w-full rounded-full px-5 py-3 type-body">Escolher outro mistério</button>
     </section>
+  `
+}
+
+function sortReview(game) {
+  if (!game?.results) return ''
+  const lookup = new Map([...game.items, ...game.pool].map((m) => [m.id, m]))
+  return `
+    <div class="review-list mt-5 text-left">
+      <p class="type-kicker mb-2 text-ink/45">Correção</p>
+      ${game.results.map((r, i) => {
+        const placed = lookup.get(game.picked[i])
+        const right = r.expected
+        if (r.ok) {
+          return `<div class="review-row is-ok"><span>✅</span><span class="type-item">${i + 1}. ${right.emoji} ${right.title}</span></div>`
+        }
+        return `<div class="review-row is-bad">
+          <span>❌</span>
+          <span class="min-w-0">
+            <span class="type-item block">${i + 1}. ${placed?.emoji || ''} ${placed?.title || '—'}</span>
+            <span class="type-meta block text-ink/55">Certo: ${right.emoji} ${right.title}</span>
+          </span>
+        </div>`
+      }).join('')}
+    </div>
   `
 }
 
 export function playQuiz(quiz) {
   const q = quiz.questions[quiz.index]
   const n = quiz.index + 1
+  const total = quiz.questions.length
+  const score = quiz.answers.filter((a) => a.ok).length
   return `
     <section class="rise mx-auto max-w-md">
       <div class="flex items-center justify-between">
         <button data-action="play-hub" class="glass grid h-10 w-10 place-items-center rounded-full">✕</button>
         <span class="type-num grid h-12 w-12 place-items-center rounded-full border-2 border-gold text-lg text-gold">${String(n).padStart(2, '0')}</span>
-        <span class="type-meta text-ink/50">${quiz.answers.filter((a) => a.ok).length}★</span>
+        <span class="type-num text-lg text-gold">${score}/${total}</span>
       </div>
       <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div class="xp-fill h-full" style="width:${(quiz.index / quiz.questions.length) * 100}%"></div>
+        <div class="xp-fill h-full" style="width:${(quiz.index / total) * 100}%"></div>
       </div>
       ${q.mystery ? `<p class="mt-8 text-center text-5xl">${q.mystery.emoji}</p>` : `<p class="mt-8 text-center text-5xl">⚡</p>`}
-      <p class="type-kicker mt-4 text-center text-ink/45">Pergunta ${n} de ${quiz.questions.length}</p>
+      <p class="type-kicker mt-4 text-center text-ink/45">Pergunta ${n} de ${total}</p>
       <h2 class="type-heading mt-2 text-center">${q.prompt}</h2>
       ${q.mystery ? `<p class="type-body mt-2 text-center text-ink/60">${q.mystery.title}</p>` : ''}
       <div class="mt-6 grid gap-3">
@@ -357,17 +371,39 @@ export function playQuiz(quiz) {
   `
 }
 
-export function resultQuiz(tally, progress, unlocked) {
+export function resultQuiz(tally, progress, unlocked, quiz) {
   return `
     <section class="rise mx-auto max-w-md text-center">
       ${tercoIcon('mx-auto h-28 w-28 pop')}
-      <h1 class="type-title mt-4 text-gold">${tally.perfect ? 'Quiz perfeito!' : `${tally.correct}/${tally.total}`}</h1>
-      <p class="type-body mt-2 text-ink/70">${tally.perfect ? 'Você manda no terço.' : 'Cada erro vira uma Ave Maria a mais.'}</p>
+      <h1 class="type-title mt-4 text-gold">${tally.correct}/${tally.total}</h1>
+      <p class="type-body mt-2 text-ink/70">${tally.perfect ? 'Quiz perfeito! Você manda no terço.' : 'Cada erro vira uma Ave Maria a mais.'}</p>
       <p class="type-score mt-4 text-gold">+${tally.xp} XP</p>
       ${unlocked.length ? `<div class="mt-4 space-y-2">${unlocked.map((a) => `<p class="glass type-body rounded-2xl px-4 py-3">🏅 ${mark(a.emoji, 'inline-block h-5 w-5')} ${a.name}</p>`).join('')}</div>` : ''}
+      ${quizReview(quiz)}
       <button data-action="play-quiz" class="btn-gold mt-6 w-full rounded-full px-5 py-4">Outra rodada</button>
       <button data-action="home" class="type-body mt-3 w-full rounded-full px-5 py-3 text-ink/70">Início</button>
     </section>
+  `
+}
+
+function quizReview(quiz) {
+  if (!quiz?.answers?.length) return ''
+  return `
+    <div class="review-list mt-5 text-left">
+      <p class="type-kicker mb-2 text-ink/45">Correção</p>
+      ${quiz.answers.map((a, i) => {
+        if (a.ok) {
+          return `<div class="review-row is-ok"><span>✅</span><span class="type-item">${i + 1}. ${a.expected}</span></div>`
+        }
+        return `<div class="review-row is-bad">
+          <span>❌</span>
+          <span class="min-w-0">
+            <span class="type-item block">${i + 1}. ${a.chosen || '—'}</span>
+            <span class="type-meta block text-ink/55">Certo: ${a.expected}</span>
+          </span>
+        </div>`
+      }).join('')}
+    </div>
   `
 }
 
@@ -422,9 +458,9 @@ export function how() {
     <section class="rise mx-auto max-w-md">
       ${backRow('Como jogar', 'play-hub')}
       <div class="mt-5 space-y-3">
-        ${howStep('1', 'Escolha', 'O desafio de hoje segue o terço da Igreja.')}
-        ${howStep('2', 'Monte', 'Toque uma conta e depois o espaço 1 a 5.')}
-        ${howStep('3', 'Ganhe', 'Ordem certa vale XP. Jogar todo dia acende a chama.')}
+        ${howStep('1', 'Escolha', 'Desafio do dia, rosário, linha do tempo ou quiz.')}
+        ${howStep('2', 'Toque', 'Toque na ordem. O número aparece ao lado. A linha do tempo tem 8 cenas, não 5.')}
+        ${howStep('3', 'Ganhe', 'Limpar zera os números. No fim, veja o que acertou.')}
       </div>
     </section>
   `

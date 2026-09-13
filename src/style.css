@@ -254,42 +254,117 @@ h3 {
   transform: translateY(-2px);
 }
 
-.mystery-card.is-selected {
-  transform: scale(1.03);
+.sort-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+.sort-grid.is-compact {
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.bead-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 4.1rem;
+  padding: 0.6rem 0.65rem;
+  text-align: left;
+  border-radius: 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.sort-grid.is-compact .bead-tile {
+  min-height: 3.85rem;
+  padding: 0.45rem 0.45rem 0.45rem 0.5rem;
+  border-radius: 0.95rem;
+}
+
+.sort-grid.is-compact .type-item {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sort-grid.is-compact .type-meta {
+  font-size: 0.7rem;
+}
+
+.bead-tile:hover {
+  transform: translateY(-1px);
+}
+
+.bead-tile.is-ranked {
   border-color: #f8e7a0;
   box-shadow:
-    0 0 0 2px rgba(248, 231, 160, 0.45),
-    0 12px 30px rgba(232, 197, 71, 0.28);
+    0 0 0 1px rgba(248, 231, 160, 0.35),
+    0 10px 22px rgba(232, 197, 71, 0.18);
 }
 
-.slot {
-  min-height: 84px;
-  border-radius: 1.25rem;
-  border: 1.5px dashed rgba(255, 246, 227, 0.22);
-  background: rgba(255, 255, 255, 0.03);
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    transform 0.18s ease;
+.rank-badge {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f3d27a, #c9a227);
+  color: #3a2208;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
-.slot.is-hot {
-  border-color: #e8c547;
-  background: rgba(232, 197, 71, 0.1);
-  transform: scale(1.01);
+.sort-grid.is-compact .rank-badge {
+  min-width: 1.4rem;
+  height: 1.4rem;
+  font-size: 0.68rem;
 }
 
-.slot.is-ok {
-  border-style: solid;
-  border-color: #86efac;
-  background: rgba(34, 197, 94, 0.1);
+.play-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 8;
+  margin-top: 1rem;
+  padding: 0.85rem 0 0.35rem;
+  background: linear-gradient(180deg, transparent, rgba(18, 8, 29, 0.94) 32%);
 }
 
-.slot.is-bad {
-  border-style: solid;
-  border-color: #fca5a5;
-  background: rgba(239, 68, 68, 0.1);
-  animation: shake 0.4s ease;
+.review-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.review-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 246, 227, 0.1);
+}
+
+.review-row.is-ok {
+  border-color: rgba(134, 239, 172, 0.28);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.review-row.is-bad {
+  border-color: rgba(252, 165, 165, 0.28);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 @keyframes shake {

@@ -323,8 +323,9 @@ export const ACHIEVEMENTS = [
   { id: 'dezena-perfeita', name: 'Dezena perfeita', desc: 'Acerte a ordem das 5 contas.', emoji: '💎' },
   { id: 'quatro-luzes', name: 'Quatro coroas', desc: 'Complete os quatro conjuntos ao menos uma vez.', emoji: '💠' },
   { id: 'chama-sete', name: 'Chama de sete dias', desc: 'Mantenha uma sequência de 7 dias.', emoji: '🔥' },
-  { id: 'relampago', name: 'Relâmpago', desc: 'Acerte 5 perguntas no quiz.', emoji: '⚡' },
-  { id: 'cronista', name: 'Cronista do Evangelho', desc: 'Acerte a linha do tempo.', emoji: '📜' },
+  { id: 'relampago', name: 'Relâmpago', desc: 'Acerte 8 perguntas no quiz.', emoji: '⚡' },
+  { id: 'cronista', name: 'Rosário em ordem', desc: 'Acerte os 20 mistérios do Rosário completo.', emoji: '📿' },
+  { id: 'linha-tempo', name: 'Cronista', desc: 'Acerte a linha do tempo com 8 cenas.', emoji: '📜' },
   { id: 'vinte-contas', name: 'Rosário completo', desc: 'Junte 20 contas de luz.', emoji: '📿' },
   { id: 'mestre-gozoso', name: 'Mestre gozoso', desc: 'Três dezenas perfeitas dos Gozosos.', emoji: '🌟' },
   { id: 'mestre-luminoso', name: 'Mestre luminoso', desc: 'Três dezenas perfeitas dos Luminosos.', emoji: '✨' },
@@ -381,12 +382,12 @@ export const PRAISES = [
   'Nossa Senhora sorri com essa dezena.',
   'Contas no lugar, coração em paz.',
   'É assim que se reza brincando.',
-  'O terço agradece. Joga de novo?',
+  'O terço agradece. A ordem ficou no coração.',
 ]
 
 export const NUDGES = [
   'Quase lá — duas contas ainda trocadas.',
   'Respira. Lembra da vida de Jesus, do começo ao fim.',
-  'Uma dica: o primeiro mistério abre a história.',
+  'O primeiro mistério abre a história.',
   'Não desanima. O terço também se aprende errando.',
 ]
